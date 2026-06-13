@@ -1,9 +1,11 @@
 import React from 'react';
 
 /**
- * Header — sticky glassmorphism header with logo and live indicator.
+ * Header — sticky glassmorphism header with logo, live indicator and theme toggle.
  */
-export default function Header({ liveCount, offline }) {
+export default function Header({ liveCount, offline, theme, onToggleTheme }) {
+  const isDark = theme === 'dark';
+
   return (
     <header className="app-header">
       <div className="container header-content">
@@ -16,6 +18,7 @@ export default function Header({ liveCount, offline }) {
         </a>
 
         <div className="header-actions">
+          {/* Live / Offline indicator */}
           {offline ? (
             <div
               className="live-indicator-badge offline"
@@ -35,9 +38,23 @@ export default function Header({ liveCount, offline }) {
             </div>
           ) : (
             <span className="api-status-ok" aria-label="API conectada">
-              🟢 API Conectada
+              <span aria-hidden="true">●</span> En línea
             </span>
           )}
+
+          {/* Theme Toggle */}
+          <button
+            className="theme-toggle"
+            onClick={onToggleTheme}
+            aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            title={isDark ? 'Modo claro' : 'Modo oscuro'}
+          >
+            <span className="theme-toggle-track" aria-hidden="true">
+              <span className="theme-toggle-thumb">
+                {isDark ? '🌙' : '☀️'}
+              </span>
+            </span>
+          </button>
         </div>
       </div>
     </header>

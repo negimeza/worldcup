@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useWorldCupData } from './hooks/useWorldCupData';
 import { useFavorites } from './hooks/useFavorites';
 import { useMatchFilters } from './hooks/useMatchFilters';
+import { useTheme } from './hooks/useTheme';
 
 import Header from './components/Header';
 import HeroBanner from './components/HeroBanner';
@@ -10,8 +11,14 @@ import MatchCard from './components/MatchCard';
 import StandingsTable from './components/StandingsTable';
 import { EmptyState, DateGroup } from './components/MatchListUI';
 
+const DATES_PER_PAGE = 5;
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('partidos');
+  const [visibleDates, setVisibleDates] = useState(DATES_PER_PAGE);
+
+  // Theme
+  const { theme, toggleTheme } = useTheme();
 
   // Data layer
   const { games, groups, teamsMap, loading, refreshing, offline, error, refresh } = useWorldCupData();
@@ -31,6 +38,11 @@ export default function App() {
     featuredMatch,
   } = useMatchFilters(games, favorites);
 
+  // Reset visible count when any filter changes
+  useEffect(() => {
+    setVisibleDates(DATES_PER_PAGE);
+  }, [activeFilter, searchQuery, selectedGroup, selectedCountry, activeTab]);
+
   const sortedGroups = [...groups].sort((a, b) => a.name.localeCompare(b.name));
 
   const showHero =
@@ -40,13 +52,27 @@ export default function App() {
     selectedGroup === 'all' &&
     activeFilter === 'all';
 
-  const sortedDateKeys = Object.keys(groupedByDate).sort((a, b) =>
-    activeFilter === 'finished' ? b.localeCompare(a) : a.localeCompare(b)
+  const sortedDateKeys = useMemo(
+    () => Object.keys(groupedByDate).sort((a, b) =>
+      activeFilter === 'finished' ? b.localeCompare(a) : a.localeCompare(b)
+    ),
+    [groupedByDate, activeFilter]
   );
+
+  // Only the slice the user has requested to see
+  const visibleDateKeys = sortedDateKeys.slice(0, visibleDates);
+  const remainingDates = sortedDateKeys.length - visibleDates;
+  const hasMore = remainingDates > 0;
+
+  // Count how many extra matches are hidden
+  const hiddenMatchCount = useMemo(() => {
+    const nextBatch = sortedDateKeys.slice(visibleDates, visibleDates + DATES_PER_PAGE);
+    return nextBatch.reduce((acc, key) => acc + (groupedByDate[key]?.length ?? 0), 0);
+  }, [sortedDateKeys, visibleDates, groupedByDate]);
 
   return (
     <div className="app-container">
-      <Header liveCount={liveCount} offline={offline} />
+      <Header liveCount={liveCount} offline={offline} theme={theme} onToggleTheme={toggleTheme} />
 
       {/* Tab switcher */}
       <div className="container">
@@ -120,21 +146,47 @@ export default function App() {
               />
 
               {filteredGames.length > 0 ? (
-                sortedDateKeys.map((dateKey) => (
-                  <DateGroup
-                    key={dateKey}
-                    dateKey={dateKey}
-                    games={groupedByDate[dateKey]}
-                    renderCard={(game) => (
-                      <MatchCard
-                        key={game.id}
-                        match={game}
-                        isFavorite={isFavorite(game.id)}
-                        onToggleFavorite={() => toggleFavorite(game.id)}
-                      />
-                    )}
-                  />
-                ))
+                <>
+                  {visibleDateKeys.map((dateKey) => (
+                    <DateGroup
+                      key={dateKey}
+                      dateKey={dateKey}
+                      games={groupedByDate[dateKey]}
+                      renderCard={(game) => (
+                        <MatchCard
+                          key={game.id}
+                          match={game}
+                          isFavorite={isFavorite(game.id)}
+                          onToggleFavorite={() => toggleFavorite(game.id)}
+                        />
+                      )}
+                    />
+                  ))}
+
+                  {/* Ver más / Load more */}
+                  {hasMore && (
+                    <div className="load-more-wrapper">
+                      <button
+                        className="load-more-btn"
+                        onClick={() => setVisibleDates((v) => v + DATES_PER_PAGE)}
+                        aria-label={`Ver más partidos, ${hiddenMatchCount} partidos ocultos`}
+                      >
+                        <span className="load-more-icon" aria-hidden="true">⚽</span>
+                        Ver más partidos
+                        <span className="load-more-badge">
+                          +{hiddenMatchCount} partidos · {Math.min(remainingDates, DATES_PER_PAGE)} fechas más
+                        </span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* When all loaded — show a final indicator */}
+                  {!hasMore && sortedDateKeys.length > DATES_PER_PAGE && (
+                    <div className="all-loaded-msg" role="status" aria-live="polite">
+                      <span>✅ Mostrando todos los {filteredGames.length} partidos</span>
+                    </div>
+                  )}
+                </>
               ) : (
                 <EmptyState
                   icon="🔍"
