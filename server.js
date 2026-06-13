@@ -19,45 +19,77 @@ const API_KEY = process.env.API_FOOTBALL_KEY;
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Simple in-memory cache
+// Dynamic in-memory cache
 let gamesCache = null;
 let lastFetchTime = 0;
-const CACHE_DURATION_MS = 60000; // 60 seconds
+let cacheDurationMs = 60000; // starts at 1 minute, updated dynamically
 
-// Function to map API-Football format to our custom frontend format
-function mapApiFootballToAppFormat(apiData) {
-  if (!apiData || !apiData.response) return [];
+function updateCacheDuration(games) {
+  if (!games || games.length === 0) {
+    cacheDurationMs = 60000; // 1 minute if empty
+    return;
+  }
+
+  const now = Date.now();
+  let hasActiveMatchToday = false;
+
+  for (const game of games) {
+    if (!game.kickoff_utc) continue;
+
+    const kickoffTime = new Date(game.kickoff_utc).getTime();
+    const elapsed = now - kickoffTime;
+
+    // A match is active if current time is within:
+    // - 30 minutes before kickoff (pre-match buildup)
+    // - up to 3 hours after kickoff (game length + padding)
+    if (elapsed > -30 * 60 * 1000 && elapsed < 3 * 60 * 60 * 1000) {
+      hasActiveMatchToday = true;
+      break;
+    }
+  }
+
+  if (hasActiveMatchToday) {
+    cacheDurationMs = 15 * 60 * 1000; // 15 minutes cache during active match times
+    console.log(`[Cache Manager] Active match window detected. Cache duration: 15 minutes.`);
+  } else {
+    cacheDurationMs = 6 * 60 * 60 * 1000; // 6 hours cache during off-times
+    console.log(`[Cache Manager] No active matches today or all finished. Cache duration: 6 hours.`);
+  }
+}
+
+// Function to map Zafronix format to our custom frontend format
+function mapZafronixToAppFormat(zafronixData) {
+  if (!zafronixData || !zafronixData.data) return [];
   
-  return apiData.response.map(item => {
-    const fixture = item.fixture;
-    const teams = item.teams;
-    const goals = item.goals;
-    const events = item.events || [];
+  return zafronixData.data.map(item => {
+    // Scorers mapping
+    const homeGoals = (item.goals || []).filter(g => g.team === 'home');
+    const awayGoals = (item.goals || []).filter(g => g.team === 'away');
+    const home_scorers = homeGoals.map(g => `${g.scorer} ${g.minute}'`).join(', ') || 'null';
+    const away_scorers = awayGoals.map(g => `${g.scorer} ${g.minute}'`).join(', ') || 'null';
 
-    // Extract scorers
-    const homeGoals = events.filter(e => e.type === 'Goal' && e.team.id === teams.home.id);
-    const awayGoals = events.filter(e => e.type === 'Goal' && e.team.id === teams.away.id);
-
-    const home_scorers = homeGoals.map(g => `${g.player.name} ${g.time.elapsed}'`).join(', ') || 'null';
-    const away_scorers = awayGoals.map(g => `${g.player.name} ${g.time.elapsed}'`).join(', ') || 'null';
+    // Status mapping
+    let isFinished = item.status === 'finished' ? 'TRUE' : 'FALSE';
+    let timeElapsed = item.status === 'finished' ? "90'" : (item.status === 'live' ? (item.liveMinute ? `${item.liveMinute}'` : 'live') : 'notstarted');
 
     return {
-      id: fixture.id.toString(),
-      home_team_id: teams.home.id.toString(),
-      away_team_id: teams.away.id.toString(),
-      home_score: goals.home !== null ? goals.home.toString() : '0',
-      away_score: goals.away !== null ? goals.away.toString() : '0',
+      id: item.id ? item.id.toString() : Math.random().toString(),
+      home_team_id: item.homeTeam,
+      away_team_id: item.awayTeam,
+      home_score: item.homeScore !== null && item.homeScore !== undefined ? item.homeScore.toString() : '0',
+      away_score: item.awayScore !== null && item.awayScore !== undefined ? item.awayScore.toString() : '0',
       home_scorers,
       away_scorers,
-      group: item.league.round.replace('Group ', ''), // Simple mapping
+      group: item.stage ? item.stage.replace('group_', '').toUpperCase() : '',
       matchday: '1',
-      local_date: new Date(fixture.date).toLocaleString('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-      stadium_id: '15', // Mock stadium for now
-      finished: fixture.status.short === 'FT' ? 'TRUE' : 'FALSE',
-      time_elapsed: fixture.status.short === 'NS' ? 'notstarted' : `${fixture.status.elapsed}'`,
-      type: item.league.round.includes('Group') ? 'group' : 'knockout',
-      home_team_name_en: teams.home.name,
-      away_team_name_en: teams.away.name
+      local_date: new Date(item.kickoffUtc).toLocaleString('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+      stadium_id: item.stadiumId || '15',
+      finished: isFinished,
+      time_elapsed: timeElapsed,
+      type: item.stage && item.stage.includes('group') ? 'group' : 'knockout',
+      home_team_name_en: item.homeTeam,
+      away_team_name_en: item.awayTeam,
+      kickoff_utc: item.kickoffUtc
     };
   });
 }
@@ -66,77 +98,66 @@ app.get('/get/games', async (req, res) => {
   const now = Date.now();
 
   // Return cached data if valid
-  if (gamesCache && (now - lastFetchTime < CACHE_DURATION_MS)) {
-    console.log('Serving from cache');
+  if (gamesCache && (now - lastFetchTime < cacheDurationMs)) {
+    const secondsRemaining = Math.max(0, Math.round((cacheDurationMs - (now - lastFetchTime)) / 1000));
+    console.log(`Serving from cache (remaining: ${secondsRemaining}s, cache duration: ${cacheDurationMs / 60000}m)`);
     return res.json({ games: gamesCache });
   }
 
-  // If no API Key provided, serve local backup data!
-  if (!API_KEY) {
-    console.log('No API_FOOTBALL_KEY found in .env. Serving fallback local data.');
-    try {
-      const backupPath = path.join(__dirname, 'src', 'services', 'backupData.js');
-      let backupContent = await fs.readFile(backupPath, 'utf8');
-      
-      // Basic parser to extract the JSON array from the JS file
-      const match = backupContent.match(/export const backupGames = (\[[\s\S]*?\]);/);
-      if (match && match[1]) {
-        // Warning: This uses eval-like parsing since it's a JS file. In production, use a strict JSON file.
-        // For simplicity, we just clean it up slightly and parse.
-        const cleanedStr = match[1].replace(/'/g, '"').replace(/([a-zA-Z0-9_]+):/g, '"$1":');
-        
-        // As a safe fallback for the raw format, we'll just send the string back if parse fails
-        try {
-           gamesCache = JSON.parse(cleanedStr);
-        } catch {
-           // Fallback if regex clean fails
-           const data = await import('./src/services/backupData.js');
-           gamesCache = data.backupGames;
-        }
-        
-        lastFetchTime = now;
-        return res.json({ games: gamesCache });
-      }
-    } catch (err) {
-      console.error('Failed to read backupData.js', err);
-      return res.status(500).json({ error: 'No API Key and failed to read backup data' });
-    }
-  }
-
-  // Fetch from API-Football
-  console.log('Fetching fresh data from API-Football...');
+  // Fetch from Zafronix API
+  console.log('Fetching fresh data from Zafronix API...');
   try {
-    const response = await fetch('https://v3.football.api-sports.io/fixtures?league=1&season=2026', {
+    const response = await fetch('https://api.zafronix.com/fifa/worldcup/v1/matches?year=2026', {
       headers: {
-        'x-apisports-key': API_KEY,
-        'x-rapidapi-key': API_KEY
+        'X-API-Key': 'zwc_free_ac34a594d0775d5cdc8e7bd4'
       }
     });
 
     if (!response.ok) {
-      throw new Error(`API returned ${response.status}`);
+      throw new Error(`Zafronix API returned ${response.status}`);
     }
 
     const data = await response.json();
     
-    // Check for API errors (API-Football puts errors in the body)
-    if (data.errors && Object.keys(data.errors).length > 0) {
-        console.error('API-Football error:', data.errors);
-        return res.status(400).json({ error: 'API Error', details: data.errors });
-    }
-
-    gamesCache = mapApiFootballToAppFormat(data);
+    gamesCache = mapZafronixToAppFormat(data);
+    updateCacheDuration(gamesCache);
     lastFetchTime = now;
     
     return res.json({ games: gamesCache });
 
   } catch (error) {
-    console.error('Error fetching from API-Football:', error);
+    console.error('Error fetching from Zafronix API:', error);
     // If it fails, send cached data if available
     if (gamesCache) {
       return res.json({ games: gamesCache });
     }
     return res.status(500).json({ error: 'Failed to fetch external data' });
+  }
+});
+
+let zafronixCache = null;
+let lastZafronixFetch = 0;
+
+app.get('/get/zafronix/matches', async (req, res) => {
+  const now = Date.now();
+  if (zafronixCache && (now - lastZafronixFetch < CACHE_DURATION_MS)) {
+    return res.json(zafronixCache);
+  }
+
+  try {
+    const response = await fetch('https://api.zafronix.com/fifa/worldcup/v1/matches?year=2026', {
+      headers: { 'X-API-Key': 'zwc_free_ac34a594d0775d5cdc8e7bd4' }
+    });
+
+    if (!response.ok) throw new Error(`Zafronix API error: ${response.statusText}`);
+
+    zafronixCache = await response.json();
+    lastZafronixFetch = now;
+    res.json(zafronixCache);
+  } catch (error) {
+    console.error('Zafronix Error:', error);
+    if (zafronixCache) return res.json(zafronixCache);
+    res.status(500).json({ error: 'Error fetching from Zafronix' });
   }
 });
 
@@ -166,7 +187,7 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`⚽ Backend Proxy Server running on http://localhost:${PORT}`);
-  console.log(`Cache duration: ${CACHE_DURATION_MS / 1000} seconds`);
+  console.log(`Cache duration (initial): ${cacheDurationMs / 1000} seconds`);
   if (!API_KEY) {
     console.warn('⚠️ No API_FOOTBALL_KEY found in .env file! Server will run in Fallback Mode using backupData.js');
   }

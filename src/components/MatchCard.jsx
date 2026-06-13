@@ -55,22 +55,27 @@ export default function MatchCard({ match, isFavorite, onToggleFavorite, onClick
   const stadium = getStadiumInfo(stadium_id);
 
   // Simulated minute for live matches
+  // Use API's elapsed time if available, otherwise fallback to local calculation
   let simulatedMinute = '';
   if (isLive) {
-    const startTime = parseMatchDate(local_date, stadium_id);
-    if (startTime > 0) {
-      const elapsedMs = Date.now() - startTime;
-      const elapsedMins = Math.floor(elapsedMs / 60000);
-      if (elapsedMins < 0) {
-        simulatedMinute = "0'";
-      } else if (elapsedMins < 45) {
-        simulatedMinute = `${Math.max(1, elapsedMins)}'`;
-      } else if (elapsedMins >= 45 && elapsedMins < 60) {
-        simulatedMinute = 'MT';
-      } else if (elapsedMins >= 60 && elapsedMins < 105) {
-        simulatedMinute = `${elapsedMins - 15}'`;
-      } else {
-        simulatedMinute = '90+';
+    if (match.time_elapsed && match.time_elapsed !== 'live' && match.time_elapsed !== 'notstarted') {
+      simulatedMinute = match.time_elapsed;
+    } else {
+      const startTime = parseMatchDate(local_date, stadium_id);
+      if (startTime > 0) {
+        const elapsedMs = Date.now() - startTime;
+        const elapsedMins = Math.floor(elapsedMs / 60000);
+        if (elapsedMins < 0) {
+          simulatedMinute = "0'";
+        } else if (elapsedMins < 45) {
+          simulatedMinute = `${Math.max(1, elapsedMins)}'`;
+        } else if (elapsedMins >= 45 && elapsedMins < 60) {
+          simulatedMinute = 'MT';
+        } else if (elapsedMins >= 60 && elapsedMins < 105) {
+          simulatedMinute = `${elapsedMins - 15}'`;
+        } else {
+          simulatedMinute = '90+';
+        }
       }
     }
   }

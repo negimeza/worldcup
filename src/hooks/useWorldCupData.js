@@ -4,10 +4,6 @@ import { isMatchLive } from '../utils/matchStatus';
 
 const AUTOREFRESH_INTERVAL = 60_000; // 60 seconds
 
-/**
- * useWorldCupData — fetches and manages all World Cup data.
- * Handles: parallel fetch, caching, error state, offline fallback, auto-refresh.
- */
 export function useWorldCupData() {
   const [games, setGames] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -17,26 +13,20 @@ export function useWorldCupData() {
   const [offline, setOffline] = useState(false);
   const [error, setError] = useState(null);
 
-  // Keep a stable ref to fetchData for use inside the interval
   const fetchDataRef = useRef(null);
 
   const fetchData = useCallback(async (forceRefresh = false) => {
-    if (forceRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
+    if (forceRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(null);
 
     try {
-      // ✅ All 3 endpoints in parallel — eliminates the waterfall
       const [teamsData, gamesData, groupsData] = await Promise.all([
         getTeams(forceRefresh),
         getGames(forceRefresh),
         getGroups(forceRefresh),
       ]);
 
-      // Build teams map: { [team_id]: teamObject }
       const map = {};
       if (Array.isArray(teamsData)) {
         teamsData.forEach((team) => { map[team.id] = team; });
@@ -55,7 +45,6 @@ export function useWorldCupData() {
     }
   }, []);
 
-  // Store latest fetchData in ref so the interval always calls the fresh version
   useEffect(() => {
     fetchDataRef.current = fetchData;
   });

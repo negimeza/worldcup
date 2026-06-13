@@ -14,6 +14,7 @@ import TopScorersTable from './components/TopScorersTable';
 import MatchDetailsModal from './components/MatchDetailsModal';
 import SkeletonLoading from './components/SkeletonLoading';
 import { EmptyState, DateGroup } from './components/MatchListUI';
+import AdminPanel from './components/AdminPanel';
 
 const DATES_PER_PAGE = 5;
 
@@ -22,8 +23,21 @@ export default function App() {
   const [visibleDates, setVisibleDates] = useState(DATES_PER_PAGE);
   const [selectedMatch, setSelectedMatch] = useState(null);
 
+  // Hash router simple
+  const [isAdmin, setIsAdmin] = useState(window.location.hash === '#admin');
+
+  useEffect(() => {
+    const handleHashChange = () => setIsAdmin(window.location.hash === '#admin');
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   // Theme
   const { theme, toggleTheme } = useTheme();
+
+  if (isAdmin) {
+    return <AdminPanel />;
+  }
 
   // Data layer
   const { games, groups, teamsMap, loading, refreshing, offline, error, refresh } = useWorldCupData();
