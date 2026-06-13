@@ -3,12 +3,15 @@ import { useWorldCupData } from './hooks/useWorldCupData';
 import { useFavorites } from './hooks/useFavorites';
 import { useMatchFilters } from './hooks/useMatchFilters';
 import { useTheme } from './hooks/useTheme';
+import { useGoalNotifier } from './hooks/useGoalNotifier';
 
 import Header from './components/Header';
 import HeroBanner from './components/HeroBanner';
 import ControlsBar from './components/ControlsBar';
 import MatchCard from './components/MatchCard';
 import StandingsTable from './components/StandingsTable';
+import TopScorersTable from './components/TopScorersTable';
+import SkeletonLoading from './components/SkeletonLoading';
 import { EmptyState, DateGroup } from './components/MatchListUI';
 
 const DATES_PER_PAGE = 5;
@@ -25,6 +28,9 @@ export default function App() {
 
   // Favorites
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
+
+  // Goal Notifications
+  const { toast, clearToast } = useGoalNotifier(games, teamsMap);
 
   // Filters + memoized derived data
   const {
@@ -97,15 +103,22 @@ export default function App() {
           >
             📊 Posiciones
           </button>
+          <button
+            id="tab-goleadores"
+            role="tab"
+            aria-selected={activeTab === 'goleadores'}
+            aria-controls="panel-goleadores"
+            className={`tab-btn ${activeTab === 'goleadores' ? 'active' : ''}`}
+            onClick={() => setActiveTab('goleadores')}
+          >
+            👟 Goleadores
+          </button>
         </div>
       </div>
 
       <main className="container main-content">
         {loading ? (
-          <div className="loading-container" role="status" aria-live="polite">
-            <div className="spinner" aria-hidden="true" />
-            <p className="loading-text">Cargando datos oficiales del Mundial 2026...</p>
-          </div>
+          <SkeletonLoading />
         ) : error ? (
           <div className="error-container" role="alert">
             <h2 className="error-title">Error al cargar datos</h2>
@@ -215,6 +228,16 @@ export default function App() {
                 ))}
               </div>
             </div>
+
+            {/* Goleadores tab */}
+            <div
+              id="panel-goleadores"
+              role="tabpanel"
+              aria-labelledby="tab-goleadores"
+              hidden={activeTab !== 'goleadores'}
+            >
+              <TopScorersTable games={games} />
+            </div>
           </>
         )}
       </main>
@@ -224,11 +247,23 @@ export default function App() {
           <p>Mundial FIFA 2026 — Panel de Control de Amigos</p>
           <p className="footer-sub">
             Desarrollado con ❤️ de forma{' '}
-            <span className="footer-highlight">100% gratuita</span>{' '}
-            usando React, variables CSS nativas y la API abierta de la comunidad.
+            <span className="footer-highlight">100% gratuita</span>.
           </p>
         </div>
       </footer>
+
+      {/* Goal Toast Notification */}
+      {toast && (
+        <div className="goal-toast slide-in-bottom" role="alert" aria-live="assertive">
+          <div className="toast-content">
+            <strong>{toast.title}</strong>
+            <span>{toast.message}</span>
+          </div>
+          <button className="toast-close" onClick={clearToast} aria-label="Cerrar notificación">
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

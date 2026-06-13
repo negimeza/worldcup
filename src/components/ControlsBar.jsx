@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { isMatchLive, isMatchFinished, isMatchUpcoming } from '../utils/matchStatus';
+import { isMatchLive, isMatchFinished, isMatchUpcoming, parseMatchDate } from '../utils/matchStatus';
+import { getTeamNameES } from '../utils/teamTranslations';
 
 /**
  * ControlsBar — search, dropdowns for group/country, interactive pill chips
@@ -17,7 +18,9 @@ export default function ControlsBar({
   games = [],
 }) {
   const sortedTeams = useMemo(
-    () => Object.values(teamsMap).sort((a, b) => a.name_en.localeCompare(b.name_en)),
+    () => Object.values(teamsMap)
+      .map(t => ({ ...t, name_es: getTeamNameES(t.name_en) }))
+      .sort((a, b) => a.name_es.localeCompare(b.name_es)),
     [teamsMap]
   );
 
@@ -26,10 +29,24 @@ export default function ControlsBar({
   const upcomingCount = useMemo(() => games.filter(isMatchUpcoming).length, [games]);
   const finishedCount = useMemo(() => games.filter(isMatchFinished).length, [games]);
 
+  // Today's matches count (using user's local date)
+  const todayCount = useMemo(() => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return games.filter((g) => {
+      const ts = parseMatchDate(g.local_date, g.stadium_id);
+      if (!ts) return false;
+      const d = new Date(ts);
+      const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return dStr === todayStr;
+    }).length;
+  }, [games]);
+
   const groups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 
   const chips = [
     { id: 'all',       label: 'Todos',       icon: '🏟️', count: games.length },
+    { id: 'today',     label: 'Hoy',         icon: '📆', count: todayCount },
     { id: 'live',      label: 'En Vivo',     icon: '🔴', count: liveCount },
     { id: 'upcoming',  label: 'Próximos',    icon: '📅', count: upcomingCount },
     { id: 'finished',  label: 'Finalizados', icon: '🏁', count: finishedCount },
@@ -77,7 +94,7 @@ export default function ControlsBar({
         >
           <option value="all">Todos los países</option>
           {sortedTeams.map((team) => (
-            <option key={team.id} value={team.name_en}>{team.name_en}</option>
+            <option key={team.id} value={team.name_en}>{team.name_es}</option>
           ))}
         </select>
 

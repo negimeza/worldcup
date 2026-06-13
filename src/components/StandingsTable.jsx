@@ -1,5 +1,6 @@
 import React from 'react';
 import { getFlagUrl } from '../services/worldCupApi';
+import { getTeamNameES } from '../utils/teamTranslations';
 
 export default function StandingsTable({ group, teamsMap }) {
   const { name: groupLetter, teams } = group;
@@ -41,8 +42,9 @@ export default function StandingsTable({ group, teamsMap }) {
         <tbody>
           {sortedTeams.map((teamStats, index) => {
             const teamInfo = teamsMap[teamStats.team_id] || {};
-            const teamName = teamInfo.name_en || `Equipo ${teamStats.team_id}`;
-            const flagUrl = teamInfo.flag || getFlagUrl(teamName);
+            const engName = teamInfo.name_en || `Equipo ${teamStats.team_id}`;
+            const teamName = getTeamNameES(engName);
+            const flagUrl = teamInfo.flag || getFlagUrl(engName);
             const pos = index + 1;
             const gd = parseInt(teamStats.gd, 10);
 
