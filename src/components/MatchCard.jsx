@@ -100,7 +100,7 @@ export default function MatchCard({ match, isFavorite, onToggleFavorite, onClick
       text += `\n\uD83C\uDFDF\uFE0F ${stadium.full}`;
     }
     text += `\n\uD83C\uDFC6 *Mundial 2026*`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+    window.open(`https://api.whatsapp.com/send/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
   };
 
   return (
