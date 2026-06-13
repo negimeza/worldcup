@@ -1,111 +1,117 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { isMatchLive, isMatchFinished, isMatchUpcoming } from '../utils/matchStatus';
 
 /**
- * ControlsBar — search, group/country/status dropdowns, and refresh button.
+ * ControlsBar — search, dropdowns for group/country, interactive pill chips
+ * for match status, and refresh button.
  */
 export default function ControlsBar({
-  searchQuery,
-  onSearchChange,
-  selectedGroup,
-  onGroupChange,
-  selectedCountry,
-  onCountryChange,
-  activeFilter,
-  onFilterChange,
+  searchQuery, onSearchChange,
+  selectedGroup, onGroupChange,
+  selectedCountry, onCountryChange,
+  activeFilter, onFilterChange,
   teamsMap,
   favoritesCount,
-  refreshing,
-  onRefresh,
+  refreshing, onRefresh,
   hasHero,
+  games = [],
 }) {
-  const sortedTeams = Object.values(teamsMap).sort((a, b) =>
-    a.name_en.localeCompare(b.name_en)
+  const sortedTeams = useMemo(
+    () => Object.values(teamsMap).sort((a, b) => a.name_en.localeCompare(b.name_en)),
+    [teamsMap]
   );
 
-  const groups = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+  // Counts for the filter chips
+  const liveCount     = useMemo(() => games.filter(isMatchLive).length, [games]);
+  const upcomingCount = useMemo(() => games.filter(isMatchUpcoming).length, [games]);
+  const finishedCount = useMemo(() => games.filter(isMatchFinished).length, [games]);
+
+  const groups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+
+  const chips = [
+    { id: 'all',       label: 'Todos',       icon: '🏟️', count: games.length },
+    { id: 'live',      label: 'En Vivo',     icon: '🔴', count: liveCount },
+    { id: 'upcoming',  label: 'Próximos',    icon: '📅', count: upcomingCount },
+    { id: 'finished',  label: 'Finalizados', icon: '🏁', count: finishedCount },
+    { id: 'favorites', label: 'Favoritos',   icon: '⭐', count: favoritesCount },
+  ];
 
   return (
-    <div className={`controls-bar ${hasHero ? '' : 'controls-bar--no-hero'}`} role="search">
-      {/* Search */}
-      <div className="search-input-wrapper">
-        <span className="search-icon" aria-hidden="true">🔍</span>
-        <input
-          id="match-search"
-          type="search"
-          placeholder="Buscar país o partido..."
-          className="search-input"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          aria-label="Buscar partidos por país"
-          autoComplete="off"
-        />
+    <div className={`controls-bar ${hasHero ? '' : 'controls-bar--no-hero'}`}>
+
+      {/* ── Row 1: Search + Dropdowns + Refresh ── */}
+      <div className="controls-row" role="search">
+        <div className="search-input-wrapper">
+          <span className="search-icon" aria-hidden="true">🔍</span>
+          <input
+            id="match-search"
+            type="search"
+            placeholder="Buscar país o partido..."
+            className="search-input"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            aria-label="Buscar partidos por país"
+            autoComplete="off"
+          />
+        </div>
+
+        <select
+          id="filter-group"
+          className="filter-select"
+          value={selectedGroup}
+          onChange={(e) => onGroupChange(e.target.value)}
+          aria-label="Filtrar por grupo"
+        >
+          <option value="all">Todos los grupos</option>
+          {groups.map((g) => (
+            <option key={g} value={g}>Grupo {g}</option>
+          ))}
+        </select>
+
+        <select
+          id="filter-country"
+          className="filter-select"
+          value={selectedCountry}
+          onChange={(e) => onCountryChange(e.target.value)}
+          aria-label="Filtrar por país"
+        >
+          <option value="all">Todos los países</option>
+          {sortedTeams.map((team) => (
+            <option key={team.id} value={team.name_en}>{team.name_en}</option>
+          ))}
+        </select>
+
+        <button
+          className={`refresh-btn ${refreshing ? 'spinning' : ''}`}
+          onClick={onRefresh}
+          title="Actualizar marcadores en vivo"
+          aria-label={refreshing ? 'Actualizando...' : 'Actualizar marcadores en vivo'}
+          disabled={refreshing}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+          </svg>
+        </button>
       </div>
 
-      {/* Group filter */}
-      <select
-        id="filter-group"
-        className="filter-select"
-        value={selectedGroup}
-        onChange={(e) => onGroupChange(e.target.value)}
-        aria-label="Filtrar por grupo"
-      >
-        <option value="all">Todos los grupos</option>
-        {groups.map((g) => (
-          <option key={g} value={g}>Grupo {g}</option>
+      {/* ── Row 2: Status filter chips ── */}
+      <div className="filter-chips" role="radiogroup" aria-label="Filtrar por estado del partido">
+        {chips.map((chip) => (
+          <button
+            key={chip.id}
+            role="radio"
+            aria-checked={activeFilter === chip.id}
+            className={`filter-chip ${activeFilter === chip.id ? 'active' : ''}`}
+            onClick={() => onFilterChange(chip.id)}
+          >
+            <span aria-hidden="true">{chip.icon}</span>
+            {chip.label}
+            <span className="filter-chip-count">{chip.count}</span>
+          </button>
         ))}
-      </select>
-
-      {/* Country filter */}
-      <select
-        id="filter-country"
-        className="filter-select"
-        value={selectedCountry}
-        onChange={(e) => onCountryChange(e.target.value)}
-        aria-label="Filtrar por país"
-      >
-        <option value="all">Todos los países</option>
-        {sortedTeams.map((team) => (
-          <option key={team.id} value={team.name_en}>{team.name_en}</option>
-        ))}
-      </select>
-
-      {/* Status filter */}
-      <select
-        id="filter-status"
-        className="filter-select"
-        value={activeFilter}
-        onChange={(e) => onFilterChange(e.target.value)}
-        aria-label="Filtrar por estado del partido"
-      >
-        <option value="all">Todos los estados</option>
-        <option value="live">🔴 En Vivo</option>
-        <option value="upcoming">📅 Próximos</option>
-        <option value="finished">🏁 Finalizados</option>
-        <option value="favorites">⭐ Mis Favoritos ({favoritesCount})</option>
-      </select>
-
-      {/* Refresh button */}
-      <button
-        className={`refresh-btn ${refreshing ? 'spinning' : ''}`}
-        onClick={onRefresh}
-        title="Actualizar marcadores en vivo"
-        aria-label={refreshing ? 'Actualizando marcadores...' : 'Actualizar marcadores en vivo'}
-        disabled={refreshing}
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-        </svg>
-      </button>
+      </div>
     </div>
   );
 }

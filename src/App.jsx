@@ -143,6 +143,7 @@ export default function App() {
                 refreshing={refreshing}
                 onRefresh={refresh}
                 hasHero={!!showHero}
+                games={games}
               />
 
               {filteredGames.length > 0 ? (
