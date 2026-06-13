@@ -86,17 +86,20 @@ export default function MatchCard({ match, isFavorite, onToggleFavorite, onClick
   // WhatsApp share
   const handleShare = () => {
     const dateStr = formatMatchDateToLocal(local_date, stadium_id);
-    let text = `⚽ ${homeDisplay} vs ${awayDisplay}\n`;
+    let text = `\u26BD *${homeDisplay} vs ${awayDisplay}*\n`;
     if (isLive) {
-      text += `🔴 EN VIVO: ${home_score} - ${away_score}`;
-      if (simulatedMinute) text += ` (${simulatedMinute})`;
+      text += `\uD83D\uDD34 *EN VIVO* ${simulatedMinute ? `(${simulatedMinute})` : ''}\n`;
+      text += `*${home_score} - ${away_score}*`;
     } else if (isFinished) {
-      text += `✅ Final: ${home_score} - ${away_score}`;
+      text += `\u2705 *Finalizado*\n`;
+      text += `*${home_score} - ${away_score}*`;
     } else {
-      text += `📅 ${dateStr}`;
+      text += `\uD83D\uDCC5 ${dateStr}`;
     }
-    if (stadium) text += `\n🏟️ ${stadium.full}`;
-    text += `\n🏆 Mundial 2026`;
+    if (stadium) {
+      text += `\n\uD83C\uDFDF\uFE0F ${stadium.full}`;
+    }
+    text += `\n\uD83C\uDFC6 *Mundial 2026*`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
   };
 
@@ -195,7 +198,7 @@ export default function MatchCard({ match, isFavorite, onToggleFavorite, onClick
         <div className="match-scorers">
           {homeScorersList.length > 0 && (
             <div className="scorers-row">
-              <span className="scorers-icon" aria-hidden="true">⚽</span>
+              <span className="scorers-icon" aria-hidden="true">{"\u26BD"}</span>
               <span className="scorers-list">
                 <strong>{homeDisplay}:</strong> {homeScorersList.join(', ')}
               </span>
@@ -203,7 +206,7 @@ export default function MatchCard({ match, isFavorite, onToggleFavorite, onClick
           )}
           {awayScorersList.length > 0 && (
             <div className="scorers-row">
-              <span className="scorers-icon" aria-hidden="true">⚽</span>
+              <span className="scorers-icon" aria-hidden="true">{"\u26BD"}</span>
               <span className="scorers-list">
                 <strong>{awayDisplay}:</strong> {awayScorersList.join(', ')}
               </span>

@@ -133,7 +133,7 @@ export default function MatchDetailsModal({ match, onClose }) {
             allEvents.map((ev, i) => (
               <div key={i} className={`timeline-event ${ev.teamId === 'home' ? 'event-home' : 'event-away'}`}>
                 <span className="timeline-minute">{ev.minuteStr}</span>
-                <span className="timeline-icon">⚽</span>
+                <span className="timeline-icon">{"\u26BD"}</span>
                 <span className="timeline-player">{ev.player}</span>
               </div>
             ))
