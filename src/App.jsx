@@ -11,6 +11,7 @@ import ControlsBar from './components/ControlsBar';
 import MatchCard from './components/MatchCard';
 import StandingsTable from './components/StandingsTable';
 import TopScorersTable from './components/TopScorersTable';
+import MatchDetailsModal from './components/MatchDetailsModal';
 import SkeletonLoading from './components/SkeletonLoading';
 import { EmptyState, DateGroup } from './components/MatchListUI';
 
@@ -19,6 +20,7 @@ const DATES_PER_PAGE = 5;
 export default function App() {
   const [activeTab, setActiveTab] = useState('partidos');
   const [visibleDates, setVisibleDates] = useState(DATES_PER_PAGE);
+  const [selectedMatch, setSelectedMatch] = useState(null);
 
   // Theme
   const { theme, toggleTheme } = useTheme();
@@ -139,6 +141,7 @@ export default function App() {
                   featured={featuredMatch}
                   isFavorite={isFavorite(featuredMatch.match.id)}
                   onToggleFavorite={() => toggleFavorite(featuredMatch.match.id)}
+                  onClick={() => setSelectedMatch(featuredMatch.match)}
                 />
               )}
 
@@ -172,6 +175,7 @@ export default function App() {
                           match={game}
                           isFavorite={isFavorite(game.id)}
                           onToggleFavorite={() => toggleFavorite(game.id)}
+                          onClick={() => setSelectedMatch(game)}
                         />
                       )}
                     />
@@ -238,6 +242,13 @@ export default function App() {
             >
               <TopScorersTable games={games} />
             </div>
+
+            {selectedMatch && (
+              <MatchDetailsModal
+                match={selectedMatch}
+                onClose={() => setSelectedMatch(null)}
+              />
+            )}
           </>
         )}
       </main>

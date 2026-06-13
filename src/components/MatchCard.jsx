@@ -26,7 +26,7 @@ const KNOCKOUT_LABELS = {
 const getMatchdayLabel = (matchday, type) =>
   type !== 'group' ? (KNOCKOUT_LABELS[type] ?? type.toUpperCase()) : `J${matchday}`;
 
-export default function MatchCard({ match, isFavorite, onToggleFavorite }) {
+export default function MatchCard({ match, isFavorite, onToggleFavorite, onClick }) {
   const {
     home_team_name_en, away_team_name_en,
     home_score, away_score,
@@ -99,6 +99,8 @@ export default function MatchCard({ match, isFavorite, onToggleFavorite }) {
     <article
       className={`match-card match-card--${status}`}
       aria-label={`${homeDisplay} vs ${awayDisplay} — ${isLive ? 'En vivo' : isFinished ? 'Finalizado' : 'Próximo'}`}
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
       {/* Inner body */}
       <div className="match-card-body">

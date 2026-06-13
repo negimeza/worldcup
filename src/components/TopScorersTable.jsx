@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { getFlagUrl } from '../services/worldCupApi';
+import { getTeamNameES } from '../utils/teamTranslations';
 
 const parseScorersStr = (str, team) => {
   if (!str || str === 'null' || str === 'undefined') return [];
@@ -12,8 +13,6 @@ const parseScorersStr = (str, team) => {
     let lastName = 'Desconocido';
 
     parts.forEach(part => {
-      // If the part contains letters (e.g., "Messi 10'"), it's a new player.
-      // If it only contains numbers and symbols (e.g., "45'"), it's another goal for the previous player.
       const hasLetters = /[a-zA-ZÀ-ÿ]/.test(part);
       if (hasLetters) {
         lastName = part.replace(/\d+.*$/, '').trim() || part;
@@ -32,8 +31,8 @@ export default function TopScorersTable({ games }) {
     const goalCounts = {};
 
     games.forEach(game => {
-      const homeGoals = parseScorersStr(game.home_scorers, game.home_team_en);
-      const awayGoals = parseScorersStr(game.away_scorers, game.away_team_en);
+      const homeGoals = parseScorersStr(game.home_scorers, game.home_team_name_en);
+      const awayGoals = parseScorersStr(game.away_scorers, game.away_team_name_en);
 
       [...homeGoals, ...awayGoals].forEach(({ name, team }) => {
         if (!name) return;
@@ -47,7 +46,7 @@ export default function TopScorersTable({ games }) {
 
     const sorted = Object.values(goalCounts)
       .sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name))
-      .slice(0, 50); // Top 50 scorers
+      .slice(0, 50);
 
     return sorted;
   }, [games]);
@@ -63,38 +62,43 @@ export default function TopScorersTable({ games }) {
   }
 
   return (
-    <div className="standings-table-wrapper" style={{ overflowX: 'auto', marginBottom: '80px' }}>
-      <table className="standings-table">
-        <thead>
-          <tr>
-            <th style={{ width: '40px', textAlign: 'center' }}>Pos</th>
-            <th>Jugador</th>
-            <th style={{ textAlign: 'center' }}>Goles</th>
-          </tr>
-        </thead>
-        <tbody>
-          {topScorers.map((scorer, index) => (
-            <tr key={`${scorer.name}-${scorer.team}`}>
-              <td className="standings-num">{index + 1}</td>
-              <td>
-                <div className="standings-team-name">
-                  <img
-                    src={getFlagUrl(scorer.team)}
-                    alt={`Bandera de ${scorer.team}`}
-                    className="standings-team-flag"
-                    loading="lazy"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                  <span>{scorer.name}</span>
-                </div>
-              </td>
-              <td className="standings-pts">{scorer.goals}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="scorers-container">
+      {topScorers.map((scorer, index) => {
+        const rank = index + 1;
+        let rankClass = '';
+        if (rank === 1) rankClass = 'scorer-row--rank-1';
+        else if (rank === 2) rankClass = 'scorer-row--rank-2';
+        else if (rank === 3) rankClass = 'scorer-row--rank-3';
+
+        return (
+          <div key={`${scorer.name}-${scorer.team}`} className={`scorer-row ${rankClass}`}>
+            <div className="scorer-rank">{rank}</div>
+            
+            <div className="scorer-info">
+              <div className="scorer-flag-wrap">
+                <img
+                  src={getFlagUrl(scorer.team)}
+                  alt={`Bandera de ${scorer.team}`}
+                  className="scorer-flag"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="scorer-details">
+                <span className="scorer-name">{scorer.name}</span>
+                <span className="scorer-team-name">{getTeamNameES(scorer.team)}</span>
+              </div>
+            </div>
+
+            <div className="scorer-goals">
+              <span className="scorer-goals-num">{scorer.goals}</span>
+              <span className="scorer-goals-label">Goles</span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

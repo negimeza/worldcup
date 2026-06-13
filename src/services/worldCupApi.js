@@ -1,6 +1,6 @@
 import { backupGames, backupGroups, backupTeams } from './backupData';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://worldcup26.ir';
+const BASE_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001');
 const PROXY_URL = import.meta.env.VITE_PROXY_URL ?? 'https://api.allorigins.win/raw?url=';
 
 // Cache in memory to avoid redundant requests during fast tab switches
