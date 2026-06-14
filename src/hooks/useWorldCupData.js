@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getGames, getGroups, getTeams, isApiOffline } from '../services/worldCupApi';
 import { isMatchLive } from '../utils/matchStatus';
 
-const AUTOREFRESH_INTERVAL = 60_000; // 60 seconds
+const AUTOREFRESH_INTERVAL = 30 * 60 * 1000; // 30 minutes
 
 export function useWorldCupData() {
   const [games, setGames] = useState([]);

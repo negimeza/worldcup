@@ -49,8 +49,8 @@ function updateCacheDuration(games) {
   }
 
   if (hasActiveMatchToday) {
-    cacheDurationMs = 15 * 60 * 1000; // 15 minutes cache during active match times
-    console.log(`[Cache Manager] Active match window detected. Cache duration: 15 minutes.`);
+    cacheDurationMs = 30 * 60 * 1000; // 30 minutes cache during active match times
+    console.log(`[Cache Manager] Active match window detected. Cache duration: 30 minutes.`);
   } else {
     cacheDurationMs = 6 * 60 * 60 * 1000; // 6 hours cache during off-times
     console.log(`[Cache Manager] No active matches today or all finished. Cache duration: 6 hours.`);
