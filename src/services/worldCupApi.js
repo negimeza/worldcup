@@ -70,7 +70,14 @@ export const flagCodes = {
   "England": "gb-eng",
   "Croatia": "hr",
   "Ghana": "gh",
-  "Panama": "pa"
+  "Panama": "pa",
+  "Congo DR": "cd",
+  "C\u00F4te d'Ivoire": "ci",
+  "Cote d'Ivoire": "ci",
+  "IR Iran": "ir",
+  "T\u00FCrkiye": "tr",
+  "USA": "us",
+  "Curacao": "cw"
 };
 
 export const getFlagUrl = (teamName) => {

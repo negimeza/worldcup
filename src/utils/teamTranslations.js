@@ -53,7 +53,14 @@ const teamTranslations = {
   "England": "Inglaterra",
   "Croatia": "Croacia",
   "Ghana": "Ghana",
-  "Panama": "Panamá"
+  "Panama": "Panamá",
+  "Congo DR": "RD Congo",
+  "C\u00F4te d'Ivoire": "Costa de Marfil",
+  "Cote d'Ivoire": "Costa de Marfil",
+  "IR Iran": "Ir\u00E1n",
+  "T\u00FCrkiye": "Turqu\u00EDa",
+  "USA": "Estados Unidos",
+  "Curacao": "Curazao"
 };
 
 const searchAliases = {

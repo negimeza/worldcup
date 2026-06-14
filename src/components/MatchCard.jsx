@@ -220,7 +220,7 @@ export default function MatchCard({ match, isFavorite, onToggleFavorite, onClick
         <div className="match-footer-info">
           <span className="match-date-display">
             📅 {formatMatchDateToLocal(local_date, stadium_id)}
-            <span className="match-tz-label">(hora local)</span>
+            <span className="match-tz-label">(hora Colombia)</span>
           </span>
           {stadium && (
             <span className="match-stadium-display">

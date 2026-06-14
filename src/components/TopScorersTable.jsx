@@ -78,7 +78,7 @@ export default function TopScorersTable({ games }) {
               <div className="scorer-flag-wrap">
                 <img
                   src={getFlagUrl(scorer.team)}
-                  alt={`Bandera de ${scorer.team}`}
+                  alt={`Bandera de ${getTeamNameES(scorer.team)}`}
                   className="scorer-flag"
                   loading="lazy"
                   onError={(e) => {

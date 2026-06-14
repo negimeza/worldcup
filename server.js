@@ -57,6 +57,67 @@ function updateCacheDuration(games) {
   }
 }
 
+const ZAFRONIX_STADIUM_MAP = {
+  'estadio-azteca': '1',
+  'estadio-akron': '2',
+  'estadio-bbva': '3',
+  'att-stadium': '4',
+  'nrg-stadium': '5',
+  'arrowhead-stadium': '6',
+  'geha-field': '6',
+  'mercedes-benz-stadium': '7',
+  'hard-rock-stadium': '8',
+  'gillette-stadium': '9',
+  'lincoln-financial-field': '10',
+  'metlife-stadium': '11',
+  'bmo-field': '12',
+  'bc-place': '13',
+  'lumen-field': '14',
+  'levis-stadium': '15',
+  'sofi-stadium': '16'
+};
+
+function getKnockoutLabelES(ref) {
+  if (!ref) return 'TBD';
+  
+  const groupMatch = ref.match(/^([123])([A-L])$/);
+  if (groupMatch) {
+    const pos = groupMatch[1];
+    const grp = groupMatch[2];
+    if (pos === '1') return `1\u00BA Grupo ${grp}`;
+    if (pos === '2') return `2\u00BA Grupo ${grp}`;
+    if (pos === '3') return `3\u00BA Grupo ${grp}`;
+  }
+
+  const winnerMatch = ref.match(/^W(\d+)$/);
+  if (winnerMatch) {
+    return `Ganador P${winnerMatch[1]}`;
+  }
+
+  const loserMatch = ref.match(/^L(\d+)$/);
+  if (loserMatch) {
+    return `Perdedor P${loserMatch[1]}`;
+  }
+
+  if (typeof ref === 'string') {
+    let lower = ref.toLowerCase();
+    if (lower.startsWith('winner group ')) {
+      return `Ganador Grupo ${ref.slice(13).toUpperCase()}`;
+    }
+    if (lower.startsWith('runner-up group ')) {
+      return `2\u00BA Grupo ${ref.slice(16).toUpperCase()}`;
+    }
+    if (lower.startsWith('winner match ')) {
+      return `Ganador Partido ${ref.slice(13)}`;
+    }
+    if (lower.startsWith('loser match ')) {
+      return `Perdedor Partido ${ref.slice(12)}`;
+    }
+  }
+
+  return ref;
+}
+
 // Function to map Zafronix format to our custom frontend format
 function mapZafronixToAppFormat(zafronixData) {
   if (!zafronixData || !zafronixData.data) return [];
@@ -83,12 +144,14 @@ function mapZafronixToAppFormat(zafronixData) {
       group: item.stage ? item.stage.replace('group_', '').toUpperCase() : '',
       matchday: '1',
       local_date: new Date(item.kickoffUtc).toLocaleString('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-      stadium_id: item.stadiumId || '15',
+      stadium_id: ZAFRONIX_STADIUM_MAP[item.stadiumId] || '15',
       finished: isFinished,
       time_elapsed: timeElapsed,
       type: item.stage && item.stage.includes('group') ? 'group' : 'knockout',
       home_team_name_en: item.homeTeam,
       away_team_name_en: item.awayTeam,
+      home_team_label: getKnockoutLabelES(item.homeRef),
+      away_team_label: getKnockoutLabelES(item.awayRef),
       kickoff_utc: item.kickoffUtc
     };
   });

@@ -56,7 +56,24 @@ export default function ControlsBar({
   return (
     <div className={`controls-bar ${hasHero ? '' : 'controls-bar--no-hero'}`}>
 
-      {/* ── Row 1: Search + Dropdowns + Refresh ── */}
+      {/* ── Row 1: Status filter chips ── */}
+      <div className="filter-chips" role="radiogroup" aria-label="Filtrar por estado del partido">
+        {chips.map((chip) => (
+          <button
+            key={chip.id}
+            role="radio"
+            aria-checked={activeFilter === chip.id}
+            className={`filter-chip ${activeFilter === chip.id ? 'active' : ''}`}
+            onClick={() => onFilterChange(chip.id)}
+          >
+            <span aria-hidden="true">{chip.icon}</span>
+            {chip.label}
+            <span className="filter-chip-count">{chip.count}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Row 2: Search + Dropdowns + Refresh ── */}
       <div className="controls-row" role="search">
         <div className="search-input-wrapper">
           <span className="search-icon" aria-hidden="true">🔍</span>
@@ -111,23 +128,6 @@ export default function ControlsBar({
             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
           </svg>
         </button>
-      </div>
-
-      {/* ── Row 2: Status filter chips ── */}
-      <div className="filter-chips" role="radiogroup" aria-label="Filtrar por estado del partido">
-        {chips.map((chip) => (
-          <button
-            key={chip.id}
-            role="radio"
-            aria-checked={activeFilter === chip.id}
-            className={`filter-chip ${activeFilter === chip.id ? 'active' : ''}`}
-            onClick={() => onFilterChange(chip.id)}
-          >
-            <span aria-hidden="true">{chip.icon}</span>
-            {chip.label}
-            <span className="filter-chip-count">{chip.count}</span>
-          </button>
-        ))}
       </div>
     </div>
   );
