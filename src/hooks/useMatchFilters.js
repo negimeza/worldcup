@@ -12,7 +12,7 @@ import { getTeamNameES, getTeamAliases, normalizeString } from '../utils/teamTra
  * Keeps filtering logic out of App.jsx.
  */
 export function useMatchFilters(games, favorites) {
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState('today');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('all');
   const [selectedCountry, setSelectedCountry] = useState('all');

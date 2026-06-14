@@ -1976,14 +1976,29 @@ body,
     font-size: 18px;
   }
   .scorer-row {
-    flex-direction: column;
-    text-align: center;
+    padding: 12px 16px;
+    gap: 12px;
+    border-radius: var(--radius-sm);
   }
-  .scorer-info {
-    flex-direction: column;
+  .scorer-rank {
+    font-size: 24px;
+    width: 24px;
   }
-  .scorer-goals {
-    align-items: center;
+  .scorer-flag-wrap {
+    width: 36px;
+    height: 36px;
+  }
+  .scorer-name {
+    font-size: 15px;
+  }
+  .scorer-team-name {
+    font-size: 10px;
+  }
+  .scorer-goals-num {
+    font-size: 28px;
+  }
+  .scorer-goals-label {
+    font-size: 9px;
   }
 }
 
